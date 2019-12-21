@@ -1,0 +1,408 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\asmjit">
+      <UniqueIdentifier>{b5a7b7a6-50a5-465b-8763-8fbcf2323f5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\asmtk">
+      <UniqueIdentifier>{92416a39-8f21-4f3c-8d80-30cd4857c6c7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="align.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hijack.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="region.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="translation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="translator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86assembler.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86builder.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86callconv.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86compiler.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86features.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86instapi.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86instdb.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86internal.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86logging.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86operand.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\x86\x86rapass.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\arch.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\assembler.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\builder.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\callconv.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\codeholder.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\compiler.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\constpool.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\cpuinfo.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\emitter.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\func.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\globals.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\inst.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\jitallocator.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\jitruntime.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\logging.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\operand.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\osutils.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\ralocal.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\rapass.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\rastack.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\string.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\support.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\target.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\type.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\virtmem.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\zone.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\zonehash.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\zonelist.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\zonestack.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\zonetree.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmjit\asmjit\core\zonevector.cpp">
+      <Filter>Header Files\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="asmtk\asmtk\asmparser.cpp">
+      <Filter>Header Files\asmtk</Filter>
+    </ClCompile>
+    <ClCompile Include="asmtk\asmtk\asmtokenizer.cpp">
+      <Filter>Header Files\asmtk</Filter>
+    </ClCompile>
+    <ClCompile Include="smap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="region.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="translation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="translator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\asmjit.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86assembler.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86builder.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86callconv_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86compiler.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86emitter.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86features.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86globals.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86instapi_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86instdb.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86instdb_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86internal_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86logging_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86opcode_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86operand.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\x86\x86rapass_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\arch.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\assembler.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\build.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\builder.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\callconv.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\codebufferwriter_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\codeholder.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\compiler.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\constpool.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\cpuinfo.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\datatypes.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\emitter.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\features.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\func.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\globals.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\inst.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\jitallocator.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\jitruntime.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\logging.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\misc_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\operand.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\osutils.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\raassignment_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\rabuilders_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\radefs_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\ralocal_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\rapass_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\rastack_p.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\string.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\support.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\target.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\type.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\virtmem.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\zone.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\zonehash.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\zonelist.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\zonestack.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\zonestring.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\zonetree.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmjit\asmjit\core\zonevector.h">
+      <Filter>Header Files\asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="asmtk\asmtk\asmparser.h">
+      <Filter>Header Files\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="asmtk\asmtk\asmtk.h">
+      <Filter>Header Files\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="asmtk\asmtk\asmtokenizer.h">
+      <Filter>Header Files\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="asmtk\asmtk\elfdefs.h">
+      <Filter>Header Files\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="asmtk\asmtk\globals.h">
+      <Filter>Header Files\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="asmtk\asmtk\parserutils.h">
+      <Filter>Header Files\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="asmtk\asmtk\strtod.h">
+      <Filter>Header Files\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="align.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hijack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="smap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
