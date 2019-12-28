@@ -563,6 +563,22 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 					throw TranslatorException();
 			}
 		}
+
+		if (!jumpTable.Cases && !indirectJumpTable.Cases) {
+			auto branch = this->Branches.find(prevTrans->RVA().Start());
+			if (branch != this->Branches.end()) {
+				auto xref = branch->second;
+				for (; i >= 0; --i) {
+					if (this->Translations[i].get()->RVA().Start() == xref) {
+						break;
+					}
+				}
+
+				while (i - 1 >= 0 && this->Translations[static_cast<SIZE_T>(i) - 1].get()->RVA().Start() == xref) {
+					--i;
+				}
+			}
+		}
 	}
 
 	if (!jumpTable.Cases && !indirectJumpTable.Cases) {
