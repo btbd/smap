@@ -444,8 +444,27 @@ VOID Translator::AddSection(PBYTE base, PIMAGE_SECTION_HEADER section) {
 	}
 }
 
+VOID Translator::TraceBranch(INT &translationIndex, INT startingIndex) {
+	auto rva = this->Translations[translationIndex].get()->RVA();
+
+	auto branch = this->Branches.find(rva.Start());
+	if (branch != this->Branches.end()) {
+		auto xref = branch->second;
+		if (xref < rva.Start()) {
+			for (; translationIndex >= startingIndex; --translationIndex) {
+				if (this->Translations[translationIndex].get()->RVA().Start() == xref) {
+					break;
+				}
+			}
+
+			while (translationIndex - 1 >= startingIndex && this->Translations[static_cast<SIZE_T>(translationIndex) - 1].get()->RVA().Start() == xref) {
+				--translationIndex;
+			}
+		}
+	}
+}
+
 BOOLEAN Translator::IsRegisterAbsolute(ZydisRegister reg, INT translationIndex, INT startingIndex, PVOID &absolute) {
-	absolute = 0;
 	if (Util::IsSameRegister(reg, ZYDIS_REGISTER_RSP)) {
 		return FALSE;
 	}
@@ -456,7 +475,6 @@ BOOLEAN Translator::IsRegisterAbsolute(ZydisRegister reg, INT translationIndex, 
 			continue;
 		}
 
-		auto prevRva = prevTrans->RVA();
 		if (i != translationIndex) {
 			auto prevInst = Util::Disassemble(prevTrans->Buffer(), prevTrans->BufferSize());
 			if (prevInst.mnemonic == ZYDIS_MNEMONIC_INT3 || prevInst.mnemonic == ZYDIS_MNEMONIC_INVALID) {
@@ -486,21 +504,7 @@ BOOLEAN Translator::IsRegisterAbsolute(ZydisRegister reg, INT translationIndex, 
 			}
 		}
 
-		auto branch = this->Branches.find(prevRva.Start());
-		if (branch != this->Branches.end()) {
-			auto xref = branch->second;
-			if (xref < prevRva.Start()) {
-				for (; i >= startingIndex; --i) {
-					if (this->Translations[i].get()->RVA().Start() == xref) {
-						break;
-					}
-				}
-
-				while (i - 1 >= startingIndex && this->Translations[static_cast<SIZE_T>(i) - 1].get()->RVA().Start() == xref) {
-					--i;
-				}
-			}
-		}
+		this->TraceBranch(i, startingIndex);
 	}
 
 	return FALSE;
@@ -542,7 +546,7 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 		PVOID Mapped;
 	} indirectJumpTable = { 0 };
 
-	for (INT i = (INT)this->Translations.size() - 1; i >= 0 && !jumpTable.Cases && !indirectJumpTable.Cases; --i) {
+	for (INT i = static_cast<INT>(this->Translations.size()) - 1; i >= 0 && !jumpTable.Cases && !indirectJumpTable.Cases; --i) {
 		auto prevTrans = this->Translations[i].get();
 		if (!prevTrans->Executable()) {
 			continue;
@@ -591,9 +595,9 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 			}
 
 			if (op1.mem.disp.has_displacement) {
-				jumpTable.RVA = (PVOID)op1.mem.disp.value;
+				jumpTable.RVA = reinterpret_cast<PVOID>(op1.mem.disp.value);
 			} else {
-				if (this->IsRegisterAbsolute(op1.mem.base, i - 1, 0, jumpTable.RVA)) {
+				if (this->IsRegisterAbsolute(op1.mem.base, i, 0, jumpTable.RVA)) {
 					jumpTable.IsRelative = TRUE;
 				} else {
 					errorf("failed to trace jump table base register to a valid table (%p)\n", rva.Start());
@@ -609,6 +613,7 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 			jumpTable.LookupOperands = prevInstOperands;
 		} else {
 			if (jumpTable.JumpAbove) {
+				// LLVM - override the current index operand if we found a JA and receive a CMP or SUB
 				switch (prevInst.mnemonic) {
 					case ZYDIS_MNEMONIC_CMP: case ZYDIS_MNEMONIC_SUB:
 						jumpTable.JumpAbove = FALSE;
@@ -620,31 +625,40 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 			if (op0 == jumpTable.IndexOperand || (op0.type == jumpTable.IndexOperand.type && op0.type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(op0.reg.value, jumpTable.IndexOperand.reg.value))) {
 				switch (prevInst.mnemonic) {
 					case ZYDIS_MNEMONIC_CMP: case ZYDIS_MNEMONIC_AND: case ZYDIS_MNEMONIC_MOV: case ZYDIS_MNEMONIC_MOVSX: case ZYDIS_MNEMONIC_MOVSXD: case ZYDIS_MNEMONIC_MOVZX: case ZYDIS_MNEMONIC_SUB:
-						if (op1.type != ZYDIS_OPERAND_TYPE_IMMEDIATE) {
-							if (op1.type == ZYDIS_OPERAND_TYPE_MEMORY && op1.mem.disp.has_displacement && op1.mem.index != ZYDIS_REGISTER_NONE) {
-								jumpTable.IndexOperand = jumpOperands[0];
-								jumpTable.IndexOperand.reg.value = (op1.mem.index == jumpTable.LookupOperands[1].mem.base ? op1.mem.base : op1.mem.index);
-
-								indirectJumpTable.RVA = (PVOID)op1.mem.disp.value;
-								indirectJumpTable.EntrySize = op1.mem.scale;
-								indirectJumpTable.LookupTranslationIndex = i;
-								indirectJumpTable.LookupInstruction = prevInst;
-								indirectJumpTable.LookupIndexRegister = jumpTable.IndexOperand.reg.value;
-								indirectJumpTable.LookupScale = op1.mem.scale;
+						if (op1.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+							if (indirectJumpTable.RVA) {
+								indirectJumpTable.Cases = op1.imm.value.u + 1;
 							} else {
-								jumpTable.IndexOperand = op1;
+								jumpTable.Cases = op1.imm.value.u + 1;
 							}
+						} else if (op1.type == ZYDIS_OPERAND_TYPE_MEMORY && op1.mem.disp.has_displacement && op1.mem.index != ZYDIS_REGISTER_NONE) {
+							jumpTable.IndexOperand = jumpOperands[0];
+							jumpTable.IndexOperand.reg.value = (op1.mem.index == jumpTable.LookupOperands[1].mem.base ? op1.mem.base : op1.mem.index);
 
-							continue;
-						}
-
-						if (indirectJumpTable.RVA) {
-							indirectJumpTable.Cases = op1.imm.value.u + 1;
+							indirectJumpTable.RVA = reinterpret_cast<PVOID>(op1.mem.disp.value);
+							indirectJumpTable.EntrySize = op1.mem.scale;
+							indirectJumpTable.LookupTranslationIndex = i;
+							indirectJumpTable.LookupInstruction = prevInst;
+							indirectJumpTable.LookupIndexRegister = jumpTable.IndexOperand.reg.value;
+							indirectJumpTable.LookupScale = op1.mem.scale;
 						} else {
-							jumpTable.Cases = op1.imm.value.u + 1;
-						}
+							jumpTable.IndexOperand = op1;			
+						}				
 
 						break;
+					case ZYDIS_MNEMONIC_LEA:
+						// LLVM may decide to use LEA for the case count
+						if (op1.type == ZYDIS_OPERAND_TYPE_MEMORY && op1.mem.base != ZYDIS_REGISTER_NONE && op1.mem.disp.has_displacement) {
+							if (indirectJumpTable.RVA) {
+								indirectJumpTable.Cases = op1.mem.disp.value + 1;
+							} else {
+								jumpTable.Cases = op1.mem.disp.value + 1;
+							}
+
+							break;
+						}
+
+						// Intentional fallthrough
 					default:
 						errorf("unexpected instruction (%p, %s) with index operand while parsing jump table (%p)", prevTrans->RVA().Start(), Util::FormatInstruction(prevInst, prevTrans->RVA().Start()).c_str(), rva.Start());
 						throw TranslatorException();
@@ -653,19 +667,7 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 		}
 
 		if (!jumpTable.Cases && !indirectJumpTable.Cases) {
-			auto branch = this->Branches.find(prevTrans->RVA().Start());
-			if (branch != this->Branches.end()) {
-				auto xref = branch->second;
-				for (; i >= 0; --i) {
-					if (this->Translations[i].get()->RVA().Start() == xref) {
-						break;
-					}
-				}
-
-				while (i - 1 >= 0 && this->Translations[static_cast<SIZE_T>(i) - 1].get()->RVA().Start() == xref) {
-					--i;
-				}
-			}
+			this->TraceBranch(i, 0);
 		}
 	}
 
@@ -913,7 +915,6 @@ BOOLEAN Translator::IsRegisterBase(ZydisRegister reg, INT translationIndex, INT 
 			continue;
 		}
 
-		auto prevRva = prevTrans->RVA();
 		if (i != translationIndex) {
 			auto prevInst = Util::Disassemble(prevTrans->Buffer(), prevTrans->BufferSize());
 			if (prevInst.mnemonic == ZYDIS_MNEMONIC_INT3 || prevInst.mnemonic == ZYDIS_MNEMONIC_INVALID) {
@@ -938,21 +939,7 @@ BOOLEAN Translator::IsRegisterBase(ZydisRegister reg, INT translationIndex, INT 
 			}
 		}
 
-		auto branch = this->Branches.find(prevRva.Start());
-		if (branch != this->Branches.end()) {
-			auto xref = branch->second;
-			if (xref < prevRva.Start()) {
-				for (; i >= startingIndex; --i) {
-					if (this->Translations[i].get()->RVA().Start() == xref) {
-						break;
-					}
-				}
-
-				while (i - 1 >= startingIndex && this->Translations[static_cast<SIZE_T>(i) - 1].get()->RVA().Start() == xref) {
-					--i;
-				}
-			}
-		}
+		this->TraceBranch(i, startingIndex);
 	}
 
 	return FALSE;

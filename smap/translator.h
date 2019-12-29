@@ -15,6 +15,7 @@ private:
 	BOOLEAN ResolveImports();
 	VOID ResolveRelocations();
 	PVOID *AlignExport(SIZE_T &translationIndex, SIZE_T translationsCount, std::vector<Region> &regions, SIZE_T regionStart, SIZE_T regionEnd);
+	VOID TraceBranch(INT &translationIndex, INT startingIndex);
 	BOOLEAN IsRegisterAbsolute(ZydisRegister reg, INT translationIndex, INT startingIndex, PVOID &absolute);
 	BOOLEAN AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDecodedInstruction &jumpInstruction);
 	VOID AddRelativeTranslation(Region &rva, PBYTE instructionBuffer, ZydisDecodedInstruction &instruction);
