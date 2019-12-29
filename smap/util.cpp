@@ -69,18 +69,25 @@ namespace Util {
 
 	std::vector<IMAGE_SECTION_HEADER> GetModuleSections(HANDLE process, MODULEENTRY32 &module) {
 		std::vector<IMAGE_SECTION_HEADER> sections;
-		auto buffer = new BYTE[module.modBaseSize];
 
-		if (ReadProcessMemory(process, module.modBaseAddr, buffer, module.modBaseSize, 0)) {
-			auto headers = reinterpret_cast<PIMAGE_NT_HEADERS>(buffer + (reinterpret_cast<PIMAGE_DOS_HEADER>(buffer))->e_lfanew);
-			
-			auto section = IMAGE_FIRST_SECTION(headers);
-			for (auto i = 0; i < headers->FileHeader.NumberOfSections; ++i, ++section) {
-				sections.push_back(*section);
-			}
+		IMAGE_DOS_HEADER dosHeader = { 0 };
+		IMAGE_NT_HEADERS ntHeaders = { 0 };
+
+		if (!ReadProcessMemory(process, module.modBaseAddr, &dosHeader, sizeof(dosHeader), nullptr)) {
+			return sections;
+		}
+		
+		if (!ReadProcessMemory(process, module.modBaseAddr + dosHeader.e_lfanew, &ntHeaders, sizeof(ntHeaders), nullptr)) {
+			return sections;
 		}
 
-		delete[] buffer;
+		auto sectionPtr = reinterpret_cast<PIMAGE_SECTION_HEADER>(module.modBaseAddr + dosHeader.e_lfanew + FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) + ntHeaders.FileHeader.SizeOfOptionalHeader);
+		for (auto i = 0; i < ntHeaders.FileHeader.NumberOfSections; ++i, ++sectionPtr) {
+			IMAGE_SECTION_HEADER section = { 0 };
+			ReadProcessMemory(process, sectionPtr, &section, sizeof(section), nullptr);
+			sections.push_back(section);
+		}
+
 		return sections;
 	}
 
