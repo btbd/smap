@@ -15,9 +15,10 @@ private:
 	BOOLEAN ResolveImports();
 	VOID ResolveRelocations();
 	PVOID *AlignExport(SIZE_T &translationIndex, SIZE_T translationsCount, std::vector<Region> &regions, SIZE_T regionStart, SIZE_T regionEnd);
+	BOOLEAN IsRegisterAbsolute(ZydisRegister reg, INT translationIndex, INT startingIndex, PVOID &absolute);
 	BOOLEAN AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDecodedInstruction &jumpInstruction);
 	VOID AddRelativeTranslation(Region &rva, PBYTE instructionBuffer, ZydisDecodedInstruction &instruction);
-	BOOLEAN IsRegisterBase(ZydisRegister reg, Region rva, INT translationIndex, INT startingIndex);
+	BOOLEAN IsRegisterBase(ZydisRegister reg, INT translationIndex, INT startingIndex);
 	VOID FixSIB(INT translationIndex, INT startingIndex);
 	VOID AddSection(PBYTE base, PIMAGE_SECTION_HEADER section);
 	VOID AddExecuteSection(PBYTE base, PIMAGE_SECTION_HEADER section);

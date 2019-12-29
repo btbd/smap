@@ -444,6 +444,68 @@ VOID Translator::AddSection(PBYTE base, PIMAGE_SECTION_HEADER section) {
 	}
 }
 
+BOOLEAN Translator::IsRegisterAbsolute(ZydisRegister reg, INT translationIndex, INT startingIndex, PVOID &absolute) {
+	absolute = 0;
+	if (Util::IsSameRegister(reg, ZYDIS_REGISTER_RSP)) {
+		return FALSE;
+	}
+
+	for (auto i = translationIndex; i >= startingIndex; --i) {
+		auto prevTrans = this->Translations[i].get();
+		if (!prevTrans->Executable()) {
+			continue;
+		}
+
+		auto prevRva = prevTrans->RVA();
+		if (i != translationIndex) {
+			auto prevInst = Util::Disassemble(prevTrans->Buffer(), prevTrans->BufferSize());
+			if (prevInst.mnemonic == ZYDIS_MNEMONIC_INT3 || prevInst.mnemonic == ZYDIS_MNEMONIC_INVALID) {
+				return FALSE;
+			}
+
+			auto relativeTrans = dynamic_cast<RelativeTranslation *>(prevTrans);
+			auto prevInstOperands = Util::GetInstructionOperands(prevInst);
+			switch (prevInstOperands.size()) {
+				case 1:
+					if (prevInstOperands[0].type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(prevInstOperands[0].reg.value, reg)) {
+						return FALSE;
+					}
+
+					break;
+				case 2:
+					if (prevInstOperands[0].type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(prevInstOperands[0].reg.value, reg)) {
+						if (relativeTrans && prevInstOperands[1].imm.value.u != 0) {
+							absolute = reinterpret_cast<PVOID>(prevInstOperands[1].imm.value.u);
+							return TRUE;
+						} else {
+							return FALSE;
+						}
+					}
+
+					break;
+			}
+		}
+
+		auto branch = this->Branches.find(prevRva.Start());
+		if (branch != this->Branches.end()) {
+			auto xref = branch->second;
+			if (xref < prevRva.Start()) {
+				for (; i >= startingIndex; --i) {
+					if (this->Translations[i].get()->RVA().Start() == xref) {
+						break;
+					}
+				}
+
+				while (i - 1 >= startingIndex && this->Translations[static_cast<SIZE_T>(i) - 1].get()->RVA().Start() == xref) {
+					--i;
+				}
+			}
+		}
+	}
+
+	return FALSE;
+}
+
 BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDecodedInstruction &jumpInst) {
 	auto jumpOperands = Util::GetInstructionOperands(jumpInst);
 	if (jumpOperands.size() != 1 || jumpOperands[0].type != ZYDIS_OPERAND_TYPE_REGISTER) {
@@ -466,6 +528,7 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 		std::vector<ZydisDecodedOperand> LookupOperands;
 		ULONG64 Cases;
 		PVOID Mapped;
+		BOOLEAN JumpAbove, IsRelative;
 	} jumpTable = { 0 };
 
 	struct {
@@ -492,6 +555,10 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 
 		auto prevInstOperands = Util::GetInstructionOperands(prevInst);
 		if (prevInstOperands.size() != 2) {
+			if (!jumpTable.JumpAbove && prevInst.mnemonic == ZYDIS_MNEMONIC_JNBE) {
+				jumpTable.JumpAbove = TRUE;
+			}
+			
 			continue;
 		}
 
@@ -518,49 +585,70 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 				continue;
 			}
 
-			if (op1.type != ZYDIS_OPERAND_TYPE_MEMORY || !op1.mem.disp.has_displacement || op1.mem.index == ZYDIS_REGISTER_NONE || op1.mem.scale != 4) {
+			if (op1.type != ZYDIS_OPERAND_TYPE_MEMORY || op1.mem.index == ZYDIS_REGISTER_NONE || op1.mem.scale != 4) {
 				errorf("unexpected instruction with jump/offset register at %p (%p)\n", prevTrans->RVA().Start(), rva.Start());
 				throw TranslatorException();
+			}
+
+			if (op1.mem.disp.has_displacement) {
+				jumpTable.RVA = (PVOID)op1.mem.disp.value;
+			} else {
+				if (this->IsRegisterAbsolute(op1.mem.base, i - 1, 0, jumpTable.RVA)) {
+					jumpTable.IsRelative = TRUE;
+				} else {
+					errorf("failed to trace jump table base register to a valid table (%p)\n", rva.Start());
+					throw TranslatorException();
+				}
 			}
 
 			jumpTable.IndexOperand = jumpOperands[0];
 			jumpTable.IndexOperand.reg.value = op1.mem.index;
 			
-			jumpTable.RVA = (PVOID)op1.mem.disp.value;
 			jumpTable.LookupTranslationIndex = i;
 			jumpTable.LookupInstruction = prevInst;
 			jumpTable.LookupOperands = prevInstOperands;
-		} else if (op0 == jumpTable.IndexOperand || (op0.type == jumpTable.IndexOperand.type && op0.type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(op0.reg.value, jumpTable.IndexOperand.reg.value))) {
-			switch (prevInst.mnemonic) {
-				case ZYDIS_MNEMONIC_CMP: case ZYDIS_MNEMONIC_AND: case ZYDIS_MNEMONIC_MOV: case ZYDIS_MNEMONIC_MOVSX: case ZYDIS_MNEMONIC_MOVSXD: case ZYDIS_MNEMONIC_MOVZX:
-					if (op1.type != ZYDIS_OPERAND_TYPE_IMMEDIATE) {
-						if (op1.type == ZYDIS_OPERAND_TYPE_MEMORY && op1.mem.disp.has_displacement && op1.mem.index != ZYDIS_REGISTER_NONE) {
-							jumpTable.IndexOperand = jumpOperands[0];
-							jumpTable.IndexOperand.reg.value = (op1.mem.index == jumpTable.LookupOperands[1].mem.base ? op1.mem.base : op1.mem.index);
+		} else {
+			if (jumpTable.JumpAbove) {
+				switch (prevInst.mnemonic) {
+					case ZYDIS_MNEMONIC_CMP: case ZYDIS_MNEMONIC_SUB:
+						jumpTable.JumpAbove = FALSE;
+						jumpTable.IndexOperand = op0;
+						break;
+				}
+			}
+			
+			if (op0 == jumpTable.IndexOperand || (op0.type == jumpTable.IndexOperand.type && op0.type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(op0.reg.value, jumpTable.IndexOperand.reg.value))) {
+				switch (prevInst.mnemonic) {
+					case ZYDIS_MNEMONIC_CMP: case ZYDIS_MNEMONIC_AND: case ZYDIS_MNEMONIC_MOV: case ZYDIS_MNEMONIC_MOVSX: case ZYDIS_MNEMONIC_MOVSXD: case ZYDIS_MNEMONIC_MOVZX: case ZYDIS_MNEMONIC_SUB:
+						if (op1.type != ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+							if (op1.type == ZYDIS_OPERAND_TYPE_MEMORY && op1.mem.disp.has_displacement && op1.mem.index != ZYDIS_REGISTER_NONE) {
+								jumpTable.IndexOperand = jumpOperands[0];
+								jumpTable.IndexOperand.reg.value = (op1.mem.index == jumpTable.LookupOperands[1].mem.base ? op1.mem.base : op1.mem.index);
 
-							indirectJumpTable.RVA = (PVOID)op1.mem.disp.value;
-							indirectJumpTable.EntrySize = op1.mem.scale;
-							indirectJumpTable.LookupTranslationIndex = i;
-							indirectJumpTable.LookupInstruction = prevInst;
-							indirectJumpTable.LookupIndexRegister = jumpTable.IndexOperand.reg.value;
-							indirectJumpTable.LookupScale = op1.mem.scale;
-						} else {
-							jumpTable.IndexOperand = op1;
+								indirectJumpTable.RVA = (PVOID)op1.mem.disp.value;
+								indirectJumpTable.EntrySize = op1.mem.scale;
+								indirectJumpTable.LookupTranslationIndex = i;
+								indirectJumpTable.LookupInstruction = prevInst;
+								indirectJumpTable.LookupIndexRegister = jumpTable.IndexOperand.reg.value;
+								indirectJumpTable.LookupScale = op1.mem.scale;
+							} else {
+								jumpTable.IndexOperand = op1;
+							}
+
+							continue;
 						}
 
-						continue;
-					}
+						if (indirectJumpTable.RVA) {
+							indirectJumpTable.Cases = op1.imm.value.u + 1;
+						} else {
+							jumpTable.Cases = op1.imm.value.u + 1;
+						}
 
-					if (indirectJumpTable.RVA) {
-						indirectJumpTable.Cases = op1.imm.value.u + 1;
-					} else {
-						jumpTable.Cases = op1.imm.value.u + 1;
-					}
-
-					break;
-				default:
-					errorf("unexpected instruction (%p, %s) with index operand while parsing jump table (%p)", prevTrans->RVA().Start(), Util::FormatInstruction(prevInst, prevTrans->RVA().Start()).c_str(), rva.Start());
-					throw TranslatorException();
+						break;
+					default:
+						errorf("unexpected instruction (%p, %s) with index operand while parsing jump table (%p)", prevTrans->RVA().Start(), Util::FormatInstruction(prevInst, prevTrans->RVA().Start()).c_str(), rva.Start());
+						throw TranslatorException();
+				}
 			}
 		}
 
@@ -635,6 +723,10 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 			if (!entry) {
 				errorf("found invalid jump table entry (%p)\n", rva.Start());
 				throw TranslatorException();
+			}
+
+			if (jumpTable.IsRelative) {
+				entry = static_cast<LONG>(entry) + static_cast<LONG>(reinterpret_cast<UINT_PTR>(jumpTable.RVA));
 			}
 
 			auto dest = reinterpret_cast<PVOID>(static_cast<UINT_PTR>(entry));
@@ -810,7 +902,7 @@ VOID Translator::AddRelativeTranslation(Region &rva, PBYTE instructionBuffer, Zy
 	}
 }
 
-BOOLEAN Translator::IsRegisterBase(ZydisRegister reg, Region rva, INT translationIndex, INT startingIndex) {
+BOOLEAN Translator::IsRegisterBase(ZydisRegister reg, INT translationIndex, INT startingIndex) {
 	if (Util::IsSameRegister(reg, ZYDIS_REGISTER_RSP)) {
 		return FALSE;
 	}
@@ -891,7 +983,7 @@ VOID Translator::FixSIB(INT translationIndex, INT startingIndex) {
 		return;
 	}
 
-	if (this->IsRegisterBase(sibOperand.mem.base, rva, translationIndex, startingIndex)) {
+	if (this->IsRegisterBase(sibOperand.mem.base, translationIndex, startingIndex)) {
 		auto unusedStr = ZydisRegisterGetString(Util::GetUnusedRegister(inst));
 
 		this->ReplaceTranslation(translationIndex++, new ModifiedTranslation(rva, "push %s", unusedStr));
@@ -903,7 +995,7 @@ VOID Translator::FixSIB(INT translationIndex, INT startingIndex) {
 		this->InsertTranslation(translationIndex++, new ModifiedTranslation(rva, "%s", instructionStr.c_str()));
 
 		this->InsertTranslation(translationIndex, new ModifiedTranslation(rva, "pop %s", unusedStr));
-	} else if (sibOperand.mem.scale == 1 && this->IsRegisterBase(sibOperand.mem.index, rva, translationIndex, startingIndex)) {
+	} else if (sibOperand.mem.scale == 1 && this->IsRegisterBase(sibOperand.mem.index, translationIndex, startingIndex)) {
 		auto unusedStr = ZydisRegisterGetString(Util::GetUnusedRegister(inst));
 
 		this->ReplaceTranslation(translationIndex++, new ModifiedTranslation(rva, "push %s", unusedStr));

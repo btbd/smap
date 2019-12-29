@@ -132,6 +132,7 @@ namespace Util {
 
 		std::call_once(formatterInitialized, []() {
 			ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
+			ZydisFormatterSetProperty(&formatter, ZYDIS_FORMATTER_PROP_FORCE_SIZE, ZYAN_TRUE);
 		});
 
 		CHAR buffer[0xFF] = { 0 };
