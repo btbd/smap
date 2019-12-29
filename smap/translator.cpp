@@ -528,8 +528,7 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 		std::vector<ZydisDecodedOperand> LookupOperands;
 		ULONG64 Cases;
 		PVOID Mapped;
-		INT JumpAboveIndex;
-		BOOLEAN IsRelative;
+		BOOLEAN JumpAbove, IsRelative;
 	} jumpTable = { 0 };
 
 	struct {
@@ -556,8 +555,8 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 
 		auto prevInstOperands = Util::GetInstructionOperands(prevInst);
 		if (prevInstOperands.size() != 2) {
-			if (!jumpTable.JumpAboveIndex && prevInst.mnemonic == ZYDIS_MNEMONIC_JNBE) {
-				jumpTable.JumpAboveIndex = i;
+			if (!jumpTable.JumpAbove && prevInst.mnemonic == ZYDIS_MNEMONIC_JNBE) {
+				jumpTable.JumpAbove = TRUE;
 			}
 			
 			continue;
@@ -609,9 +608,18 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 			jumpTable.LookupInstruction = prevInst;
 			jumpTable.LookupOperands = prevInstOperands;
 		} else {
+			if (jumpTable.JumpAbove) {
+				switch (prevInst.mnemonic) {
+					case ZYDIS_MNEMONIC_CMP: case ZYDIS_MNEMONIC_SUB:
+						jumpTable.JumpAbove = FALSE;
+						jumpTable.IndexOperand = op0;
+						break;
+				}
+			}
+			
 			if (op0 == jumpTable.IndexOperand || (op0.type == jumpTable.IndexOperand.type && op0.type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(op0.reg.value, jumpTable.IndexOperand.reg.value))) {
 				switch (prevInst.mnemonic) {
-					case ZYDIS_MNEMONIC_CMP: case ZYDIS_MNEMONIC_AND: case ZYDIS_MNEMONIC_MOV: case ZYDIS_MNEMONIC_MOVSX: case ZYDIS_MNEMONIC_MOVSXD: case ZYDIS_MNEMONIC_MOVZX:
+					case ZYDIS_MNEMONIC_CMP: case ZYDIS_MNEMONIC_AND: case ZYDIS_MNEMONIC_MOV: case ZYDIS_MNEMONIC_MOVSX: case ZYDIS_MNEMONIC_MOVSXD: case ZYDIS_MNEMONIC_MOVZX: case ZYDIS_MNEMONIC_SUB:
 						if (op1.type != ZYDIS_OPERAND_TYPE_IMMEDIATE) {
 							if (op1.type == ZYDIS_OPERAND_TYPE_MEMORY && op1.mem.disp.has_displacement && op1.mem.index != ZYDIS_REGISTER_NONE) {
 								jumpTable.IndexOperand = jumpOperands[0];
@@ -627,10 +635,6 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 								jumpTable.IndexOperand = op1;
 							}
 
-							if (prevInst.mnemonic == ZYDIS_MNEMONIC_CMP) {
-								jumpTable.JumpAboveIndex = 0;
-							}
-
 							continue;
 						}
 
@@ -644,34 +648,6 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 					default:
 						errorf("unexpected instruction (%p, %s) with index operand while parsing jump table (%p)", prevTrans->RVA().Start(), Util::FormatInstruction(prevInst, prevTrans->RVA().Start()).c_str(), rva.Start());
 						throw TranslatorException();
-				}
-			} else if (jumpTable.JumpAboveIndex && (op1 == jumpTable.IndexOperand || (op1.type == jumpTable.IndexOperand.type && op1.type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(op1.reg.value, jumpTable.IndexOperand.reg.value)))) {
-				for (auto e = i + 1; e < jumpTable.JumpAboveIndex; ++e) {
-					auto subTrans = this->Translations[e].get();
-					if (!subTrans->Executable()) {
-						continue;
-					}
-
-					auto subInst = Util::Disassemble(subTrans->Buffer(), subTrans->BufferSize());
-					auto subOps = Util::GetInstructionOperands(subInst);
-					if (subOps.size() == 0) {
-						continue;
-					}
-
-					if (subOps[0] == op0 || (subOps[0].type == op0.type && op0.type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(subOps[0].reg.value, op1.reg.value))) {
-						if (subInst.mnemonic == ZYDIS_MNEMONIC_SUB && subOps.size() == 2 && subOps[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
-							jumpTable.Cases = subOps[1].imm.value.u + 1;
-							break;
-						} else {
-							errorf("unexpected instruction with JA register at %p (%p)\n", subTrans->RVA().Start(), rva.Start());
-							throw TranslatorException();
-						}
-					}
-				}
-
-				if (!jumpTable.Cases) {
-					errorf("failed to find a valid sub instruction for JA (%p)\n", rva.Start());
-					throw TranslatorException();
 				}
 			}
 		}
