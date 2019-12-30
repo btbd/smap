@@ -440,7 +440,7 @@ VOID Translator::AddSection(PBYTE base, PIMAGE_SECTION_HEADER section) {
 		}
 
 		printf("[+] %-8s > %p (0x%X, 0x%X)\n", section->Name, mapped, section->VirtualAddress, section->Misc.VirtualSize);
-		this->AddTranslation(new RegionTranslation(Region(section->VirtualAddress, section->Misc.VirtualSize), mapped, base + section->PointerToRawData, section->SizeOfRawData));
+		this->AddTranslation(new RegionTranslation(Region(section->VirtualAddress, section->Misc.VirtualSize), mapped, base + section->PointerToRawData, std::min(section->Misc.VirtualSize, section->SizeOfRawData)));
 	}
 }
 
