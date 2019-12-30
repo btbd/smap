@@ -966,7 +966,7 @@ VOID Translator::FixSIB(INT translationIndex, INT startingIndex) {
 
 	ZydisDecodedOperand sibOperand = { 0 };
 	for (auto &op : operands) {
-		if (op.type == ZYDIS_OPERAND_TYPE_MEMORY && op.mem.disp.has_displacement) {
+		if (op.type == ZYDIS_OPERAND_TYPE_MEMORY && op.mem.disp.has_displacement && op.mem.disp.value) {
 			sibOperand = op;
 			break;
 		}
