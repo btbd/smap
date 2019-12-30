@@ -354,6 +354,9 @@ BOOLEAN Translator::Map(PVOID &entry) {
 
 	for (auto &ptr : this->Translations) {
 		auto t = ptr.get();
+		if (!t->BufferSize()) {
+			continue;
+		}
 
 		auto oldProtect = 0UL;
 		if (!VirtualProtectEx(this->Process(), t->Mapped(), t->BufferSize(), PAGE_EXECUTE_READWRITE, &oldProtect)) {
@@ -938,7 +941,7 @@ BOOLEAN Translator::IsRegisterBase(ZydisRegister reg, INT translationIndex, INT 
 					break;
 				case 2:
 					if (prevInstOperands[0].type == ZYDIS_OPERAND_TYPE_REGISTER && Util::IsSameRegister(prevInstOperands[0].reg.value, reg)) {
-						return relativeTrans && prevInstOperands[1].imm.value.u == 0;
+						return relativeTrans && relativeTrans->Pointer() == nullptr;
 					}
 
 					break;
@@ -966,7 +969,7 @@ VOID Translator::FixSIB(INT translationIndex, INT startingIndex) {
 
 	ZydisDecodedOperand sibOperand = { 0 };
 	for (auto &op : operands) {
-		if (op.type == ZYDIS_OPERAND_TYPE_MEMORY && op.mem.disp.has_displacement && op.mem.disp.value) {
+		if (op.type == ZYDIS_OPERAND_TYPE_MEMORY && op.mem.disp.has_displacement && op.mem.disp.value > 0) {
 			sibOperand = op;
 			break;
 		}
