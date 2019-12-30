@@ -588,6 +588,12 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 			if (op0.type != ZYDIS_OPERAND_TYPE_REGISTER || (!Util::IsSameRegister(op0.reg.value, jumpRegister) && !Util::IsSameRegister(op0.reg.value, offset.Register))) {
 				continue;
 			}
+			
+			// (#5) MSVC - optimization for jump cases that use cs:0
+			auto prevRelative = dynamic_cast<RelativeTranslation *>(prevTrans);
+			if (prevRelative && prevRelative->Pointer() == nullptr && Util::IsSameRegister(op0.reg.value, offset.Register)) {
+				continue;
+			}
 
 			if (op1.type != ZYDIS_OPERAND_TYPE_MEMORY || op1.mem.index == ZYDIS_REGISTER_NONE || op1.mem.scale != 4) {
 				errorf("unexpected instruction with jump/offset register at %p (%p)\n", prevTrans->RVA().Start(), rva.Start());
@@ -647,7 +653,7 @@ BOOLEAN Translator::AddSwitchTranslation(Region &rva, PBYTE jumpBuffer, ZydisDec
 
 						break;
 					case ZYDIS_MNEMONIC_LEA:
-						// LLVM may decide to use LEA for the case count
+						// LLVM - may decide to use LEA for the case count
 						if (op1.type == ZYDIS_OPERAND_TYPE_MEMORY && op1.mem.base != ZYDIS_REGISTER_NONE && op1.mem.disp.has_displacement) {
 							if (indirectJumpTable.RVA) {
 								indirectJumpTable.Cases = op1.mem.disp.value + 1;
