@@ -152,6 +152,19 @@ VOID Translator::ResolveRelocations() {
 	}
 }
 
+DWORD GetNextJumpSize(PVOID dest, PVOID src) {
+	auto diff = abs(static_cast<PBYTE>(dest) - static_cast<PBYTE>(src));
+	if (abs(diff - 2) <= 0x7F) {
+		return 2;
+	}
+
+	if (abs(diff - 5) <= 0x7FFFFFFF) {
+		return 5;
+	}
+
+	return 14;
+}
+
 DWORD GetNextJumpSize(std::vector<Region> &regions, SIZE_T regionIndex, SIZE_T regionEnd) {
 	if (regionIndex >= regionEnd - 1) {
 		return 14;
@@ -169,7 +182,7 @@ DWORD GetNextJumpSize(std::vector<Region> &regions, SIZE_T regionIndex, SIZE_T r
 	return 14;
 }
 
-PVOID *Translator::AlignExport(SIZE_T &translationIndex, SIZE_T translationsCount, std::vector<Region> &regions, SIZE_T regionStart, SIZE_T regionEnd) {
+Translation *Translator::AlignExport(SIZE_T &translationIndex, SIZE_T translationsCount, std::vector<Region> &regions, SIZE_T regionStart, SIZE_T regionEnd) {
 	auto regionIndex = regionStart;
 	auto regionOffset = 0UL;
 
@@ -198,7 +211,7 @@ PVOID *Translator::AlignExport(SIZE_T &translationIndex, SIZE_T translationsCoun
 			switch (jumpSize) {
 				case 2:
 					jumpInst[0] = 0xEB;
-					jumpInst[1] = static_cast<BYTE>(jumpDest - region->End());
+					jumpInst[1] = static_cast<CHAR>(jumpDest - region->End());
 					break;
 				case 5:
 					jumpInst[0] = 0xE9;
@@ -231,7 +244,7 @@ leftover:
 	jump->Mapped(regions[regionIndex].Start() + regionOffset);
 	this->AddTranslation(jump);
 
-	return reinterpret_cast<PVOID *>(&jumpBuffer[6]);
+	return jump;
 }
 
 BOOLEAN Translator::Align(std::vector<Region> &regions, DWORD scatterThreshold) {
@@ -253,7 +266,7 @@ BOOLEAN Translator::Align(std::vector<Region> &regions, DWORD scatterThreshold) 
 	auto regionIncrement = exports.size() == 0 ? 0 : regions.size() / exports.size(); 
 	PBYTE scatterBase = nullptr;
 	auto scatterIndex = 0ULL;
-	PVOID *lastJump = nullptr;
+	Translation *lastJump = nullptr;
 
 	for (auto i = 0ULL; i < translationsCount; ++i) {
 		auto translation = this->Translations[i].get();
@@ -287,7 +300,8 @@ BOOLEAN Translator::Align(std::vector<Region> &regions, DWORD scatterThreshold) 
 			jump->Mapped(scatterBase);
 			this->AddTranslation(jump);
 
-			lastJump = reinterpret_cast<PVOID *>(&jumpBuffer[6]);
+			lastJump = jump;
+
 			scatterIndex = 0;
 			scatterBase = nullptr;
 		}
@@ -315,7 +329,22 @@ BOOLEAN Translator::Align(std::vector<Region> &regions, DWORD scatterThreshold) 
 			}
 
 			if (lastJump) {
-				*lastJump = scatterBase;
+				auto buffer = static_cast<PBYTE>(lastJump->Buffer());
+				auto jumpSize = GetNextJumpSize(scatterBase, lastJump->Mapped());
+
+				switch (jumpSize) {
+					case 2:
+						buffer[0] = 0xEB;
+						buffer[1] = static_cast<CHAR>(scatterBase - (lastJump->Mapped() + 2));
+						break;
+					case 5:
+						buffer[0] = 0xE9;
+						*reinterpret_cast<PINT>(&buffer[1]) = static_cast<INT>(scatterBase - (lastJump->Mapped() + 5));
+						break;
+					case 14:
+						*reinterpret_cast<PVOID *>(&buffer[6]) = scatterBase;
+						break;
+				}
 			}
 
 			translation->Mapped(scatterBase, TRUE);
