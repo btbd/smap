@@ -431,12 +431,12 @@ PVOID Translator::TranslateRaw(PVOID rva) {
 }
 
 PVOID Translator::Translate(PVOID rva) {
-	auto size = this->Translations.size();
+	auto size = static_cast<LONG64>(this->Translations.size());
 	if (size == 0) {
 		return nullptr;
 	}
 
-	auto left = 0ULL;
+	auto left = 0LL;
 	auto right = size - 1;
 	while (left <= right) {
 		auto middle = (left + right) / 2;
