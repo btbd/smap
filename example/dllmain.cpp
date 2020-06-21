@@ -17,19 +17,10 @@ __declspec(dllexport) HRESULT PresentHook(IDXGISwapChain *swapChain, UINT syncIn
 		device->CreateRenderTargetView(renderTarget, nullptr, &renderTargetView);
 		renderTarget->Release();
 
-		HWND targetWindow = 0;
-		EnumWindows([](HWND hWnd, LPARAM lParam) -> BOOL {
-			DWORD pid = 0;
-			GetWindowThreadProcessId(hWnd, &pid);
-			if (pid == GetCurrentProcessId()) {
-				*reinterpret_cast<HWND *>(lParam) = hWnd;
-				return FALSE;
-			}
+		DXGI_SWAP_CHAIN_DESC desc;
+		swapChain->GetDesc(&desc);
 
-			return TRUE;
-		}, reinterpret_cast<LPARAM>(&targetWindow));
-
-		ImGui_ImplDX11_Init(targetWindow, device, immediateContext);
+		ImGui_ImplDX11_Init(desc.OutputWindow, device, immediateContext);
 		ImGui_ImplDX11_CreateDeviceObjects();
 	}
 

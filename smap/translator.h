@@ -13,7 +13,7 @@ private:
 	BOOLEAN MapHeaders();
 	std::vector<PVOID> GetExports();
 	BOOLEAN ResolveImports();
-	VOID ResolveRelocations();
+	BOOLEAN ResolveRelocations();
 	Translation *AlignExport(SIZE_T &translationIndex, SIZE_T translationsCount, std::vector<Region> &regions, SIZE_T regionStart, SIZE_T regionEnd);
 	VOID TraceBranch(INT &translationIndex, INT startingIndex);
 	BOOLEAN IsRegisterAbsolute(ZydisRegister reg, INT translationIndex, INT startingIndex, PVOID &absolute);

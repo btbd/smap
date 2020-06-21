@@ -118,17 +118,17 @@ BOOLEAN Translator::ResolveImports() {
 	return TRUE;
 }
 
-VOID Translator::ResolveRelocations() {
+BOOLEAN Translator::ResolveRelocations() {
 	printf("[+] relocations\n");
 
 	auto &baseRelocDir = this->NtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];
 	if (!baseRelocDir.VirtualAddress) {
-		return;
+		return TRUE;
 	}
 
 	auto reloc = this->TranslateRaw<PIMAGE_BASE_RELOCATION>(baseRelocDir.VirtualAddress);
 	if (!reloc) {
-		return;
+		return TRUE;
 	}
 
 	for (auto currentSize = 0UL; currentSize < baseRelocDir.Size; ) {
@@ -141,15 +141,25 @@ VOID Translator::ResolveRelocations() {
 			auto type = data >> 12;
 			auto offset = data & 0xFFF;
 
-			if (type == IMAGE_REL_BASED_DIR64) {
-				auto &rva = *reinterpret_cast<PVOID *>(relocBase + offset);
-				rva = this->Translate(reinterpret_cast<PBYTE>(rva) - reinterpret_cast<PBYTE>(this->NtHeaders->OptionalHeader.ImageBase));
+			switch (type) {
+				case IMAGE_REL_BASED_ABSOLUTE:
+					break;
+				case IMAGE_REL_BASED_DIR64: {
+					auto &rva = *reinterpret_cast<PVOID *>(relocBase + offset);
+					rva = this->Translate(reinterpret_cast<PBYTE>(rva) - reinterpret_cast<PBYTE>(this->NtHeaders->OptionalHeader.ImageBase));
+					break;
+				}
+				default:
+					errorf("unsupported relocation type: %d\n", type);
+					return FALSE;
 			}
 		}
 
 		currentSize += reloc->SizeOfBlock;
 		reloc = reinterpret_cast<PIMAGE_BASE_RELOCATION>(relocData);
 	}
+
+	return TRUE;
 }
 
 DWORD GetNextJumpSize(PVOID dest, PVOID src) {
@@ -364,7 +374,9 @@ BOOLEAN Translator::Resolve() {
 		return FALSE;
 	}
 
-	this->ResolveRelocations();
+	if (!this->ResolveRelocations()) {
+		return FALSE;
+	}
 
 	printf("[+] relative instructions and jump tables\n");
 	for (auto &ptr : this->Translations) {
