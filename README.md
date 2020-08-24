@@ -9,7 +9,7 @@ This mapper is designed for an x64 target process and DLL.
 
 ## Procedure
 
-1. Scan the target process for executable alignments that are not inside of any module's `.text` or `.rdata` section. 
+1. Scan the target process for non-standard executable alignments inside modules.
 2. Analyze and adjust the DLL's executable code so that it could be scattered to 1 instruction per page - change all relative instructions and jump tables so that they reference absolute addresses.
 3. If the DLL has exports, then place as many instructions of the exports as possible into the found alignments. The alignments are split evenly across the exports so each export can be guaranteed to at least have its starting address in a valid module. For all other instructions, scatter them across newly allocated RX regions.
 4. Hijack control flow temporarily to call the DLL's entry.

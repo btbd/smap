@@ -1,51 +1,58 @@
-#include "stdafx.h"
+#include "map.h"
+#include "util.h"
+#include "translator.h"
+#include <fstream>
 
-namespace Map {
-	PVOID MapIntoRegions(HANDLE process, PBYTE base, std::vector<Region> &regions, DWORD scatterThreshold) {
-		PVOID entryPoint = nullptr;
+// Maps the PE buffer into the process
+PVOID Map::MapIntoRegions(HANDLE process, PBYTE base,
+    std::vector<Region> &regions,
+    DWORD scatterThreshold) {
+    PVOID entryPoint = nullptr;
 
-		Translator translator;
-		if (!translator.Initialize(process, base)) {
-			translator.Fail();
-			return entryPoint;
-		}
+    Translator translator;
+    if (!translator.Initialize(process, base)) {
+        translator.Fail();
+        return entryPoint;
+    }
 
-		if (!translator.Align(regions, scatterThreshold)) {
-			translator.Fail();
-			return entryPoint;
-		}
+    if (!translator.Align(regions, scatterThreshold)) {
+        translator.Fail();
+        return entryPoint;
+    }
 
-		if (!translator.Resolve()) {
-			translator.Fail();
-			return entryPoint;
-		}
-		
-		if (!translator.Map(entryPoint)) {
-			translator.Fail();
-			return entryPoint;
-		}
+    if (!translator.Resolve()) {
+        translator.Fail();
+        return entryPoint;
+    }
 
-		return entryPoint;
-	}
-	
-	PVOID MapIntoRegions(HANDLE process, LPCWSTR filePath, std::vector<Region> &regions, DWORD scatterThreshold) {
-		std::ifstream file(filePath, std::ios::ate | std::ios::binary);
-		if (!file) {
-			errorf("failed to open file: \"%ws\"\n", filePath);
-			return 0;
-		}
+    if (!translator.Map(entryPoint)) {
+        translator.Fail();
+        return entryPoint;
+    }
 
-		auto size = file.tellg();
-		auto buffer = new BYTE[size];
+    return entryPoint;
+}
 
-		file.seekg(0, std::ios::beg);
-		file.read(reinterpret_cast<PCHAR>(buffer), size);
-		file.close();
+// Maps the PE file into the process
+PVOID Map::MapIntoRegions(HANDLE process, LPCWSTR filePath,
+    std::vector<Region> &regions,
+    DWORD scatterThreshold) {
+    std::ifstream file(filePath, std::ios::ate | std::ios::binary);
+    if (!file) {
+        errorf("failed to open file: \"%ws\"\n", filePath);
+        return 0;
+    }
 
-		auto entryPoint = MapIntoRegions(process, buffer, regions, scatterThreshold);
+    auto size = file.tellg();
+    auto buffer = new BYTE[size];
 
-		delete[] buffer;
+    file.seekg(0, std::ios::beg);
+    file.read(reinterpret_cast<PCHAR>(buffer), size);
+    file.close();
 
-		return entryPoint;
-	}
+    auto entryPoint = MapIntoRegions(process, buffer, regions, scatterThreshold);
+
+    delete[] buffer;
+
+    return entryPoint;
 }

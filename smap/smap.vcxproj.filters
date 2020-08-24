@@ -188,9 +188,6 @@
     <ClInclude Include="region.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="translation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
